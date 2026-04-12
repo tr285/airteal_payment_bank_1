@@ -34,6 +34,34 @@ class TransactionService:
         return db.fetchall(query, (limit,))
         
     @staticmethod
+    def add_money(user_id, amount, utr):
+        try:
+            amount = Decimal(str(amount))
+            if amount <= 0:
+                return False, "Deposit amount must be positive."
+        except:
+            return False, "Invalid amount format."
+
+        admin = db.fetchone("SELECT id FROM users WHERE role='admin' ORDER BY id ASC LIMIT 1")
+        if not admin:
+            return False, "System Error: Admin vault unreachable."
+
+        admin_id = admin['id']
+        try:
+            # We decrement Admin, increment User
+            db.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (amount, admin_id))
+            db.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (amount, user_id))
+            
+            # Record it (utr can be tracked later but completes MVP)
+            db.execute("INSERT INTO transactions (sender_id, receiver_id, amount) VALUES (%s, %s, %s)",
+                       (admin_id, user_id, amount))
+            db.commit()
+            return True, "Funds successfully added to your account!"
+        except Exception as e:
+            db.rollback()
+            return False, f"Transaction failed: {e}"
+
+    @staticmethod
     def get_total_transactions_count():
         query = "SELECT COUNT(*) AS total_transactions FROM transactions"
         res = db.fetchone(query)
