@@ -1,67 +1,42 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Transfer Successful</title>
+{% extends "base.html" %}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block content %}
+<div class="d-flex align-items-center justify-content-center flex-column" style="min-height: 70vh;" id="success-anim">
+    
+    <svg class="success-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+        <circle class="success-check-circle" cx="26" cy="26" r="25" fill="none"/>
+        <path class="success-check-path" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+    </svg>
 
-    <style>
-        body {
-            background: #f4f6f9;
-            font-family: 'Segoe UI', sans-serif;
-            text-align: center;
-        }
+    <h2 class="fw-bold mt-4 mb-2">Payment Successful!</h2>
+    <h1 class="display-4 fw-bold text-success mb-2">₹{{ "%.2f"|format(amount) }}</h1>
+    <p class="text-muted mb-5">Sent securely to <strong>{{ receiver_name }}</strong></p>
 
-        .success-card {
-            background: white;
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            max-width: 450px;
-            margin: 100px auto;
-        }
-
-        .checkmark {
-            font-size: 70px;
-            color: green;
-            animation: pop 0.6s ease-in-out;
-        }
-
-        @keyframes pop {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .btn-danger {
-            background-color: #e60000;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background-color: #cc0000;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="success-card">
-
-    <div class="checkmark">✅</div>
-
-    <h4 class="mt-3">Transfer Successful</h4>
-
-    <p class="mt-3">
-        ₹ {{ amount }} has been sent to <strong>{{ receiver_name }}</strong>
-    </p>
-
-    <div class="mt-4">
-        <a href="/dashboard" class="btn btn-danger w-100">
-            Back to Dashboard
-        </a>
+    <div class="d-flex gap-3">
+        <a href="/dashboard" class="btn btn-fintech px-4 py-2 rounded-pill">Go to Dashboard</a>
+        <a href="/transfer" class="btn btn-outline-secondary px-4 py-2 rounded-pill">Send More</a>
     </div>
-
 </div>
 
-</body>
-</html>
+<style>
+    .success-check-circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 2;
+        stroke-miterlimit: 10;
+        stroke: var(--success-color);
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .success-check-path {
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        transform-origin: 50% 50%;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    @keyframes stroke {
+        100% { stroke-dashoffset: 0; }
+    }
+</style>
+{% endblock %}

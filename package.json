@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "blinker": "^1.0.2",
+    "flask": "^0.2.10"
+  }
+}

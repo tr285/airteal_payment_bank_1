@@ -1,8 +1,0 @@
-#!/bin/sh
-'''exec' "/Users/tukaramgore/Documents/NEW PROJECTS/FULL STACK DEVLOPMENT/Airteal_payment_bank/airtel_payment_bank/verstion1/airtel_payment_bank/venv/bin/python3.11" "$0" "$@"
-' '''
-import sys
-from charset_normalizer.cli import cli_detect
-if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
-    sys.exit(cli_detect())
