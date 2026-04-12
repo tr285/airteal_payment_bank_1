@@ -99,11 +99,12 @@ class TransactionService:
         try:
             cursor = db._get_cursor()
             
-            # Simulate real world: Add to admin pool (system pool)
-            cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount, admin_id))
-            # Add to user
+            # In real banking: add money from external source (bank transfers, ATM deposits, etc.)
+            # We simulate this by only adding to the user account (no deduction from admin)
+            # This represents money coming into the banking system
             cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount, user_id))
-            # Insert record
+            
+            # Insert record with admin as sender to track deposits
             cursor.execute("""
                 INSERT INTO transactions (sender_id, receiver_id, amount)
                 VALUES (%s, %s, %s)
