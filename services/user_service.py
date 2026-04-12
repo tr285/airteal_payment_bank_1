@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class UserService:
     @staticmethod
     def create_user(full_name, mobile, password):
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         query = "INSERT INTO users (full_name, mobile, password) VALUES (%s, %s, %s)"
         db.execute(query, (full_name, mobile, hashed_password))
 
@@ -34,7 +34,7 @@ class UserService:
         if not user or not check_password_hash(user["password"], current_password):
             return False
             
-        hashed_password = generate_password_hash(new_password)
+        hashed_password = generate_password_hash(new_password, method="pbkdf2:sha256")
         update_query = "UPDATE users SET password=%s WHERE id=%s"
         db.execute(update_query, (hashed_password, user_id))
         return True

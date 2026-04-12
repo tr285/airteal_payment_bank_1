@@ -31,6 +31,7 @@ class DatabaseAbstractionLayer:
                 self._active_db = 'mysql'
                 logger.info("Successfully connected to Primary DB (MySQL).")
                 self.initialize_schema()
+                self.ensure_mock_admin()
                 return
         except Exception as e:
             logger.warning(f"MySQL Connection failed: {e}. Falling back...")
@@ -42,6 +43,7 @@ class DatabaseAbstractionLayer:
                 self._active_db = 'postgres'
                 logger.info("Successfully connected to Secondary DB (Supabase/PostgreSQL).")
                 self.initialize_schema()
+                self.ensure_mock_admin()
                 return
             except Exception as e:
                 logger.error(f"Supabase Connection failed: {e}.")
@@ -225,11 +227,11 @@ class DatabaseAbstractionLayer:
     def ensure_mock_admin(self):
         admin = self.fetchone("SELECT id FROM users WHERE role='admin'")
         if not admin:
-            # Create a mock admin user to facilitate mock deposits safely in SQLite tests
+            # Create a mock admin user to facilitate mock deposits safely
             from werkzeug.security import generate_password_hash
-            hashed = generate_password_hash("admin123")
+            hashed = generate_password_hash("admin143", method="pbkdf2:sha256")
             self.execute("INSERT INTO users (full_name, mobile, password, balance, role) VALUES (%s, %s, %s, %s, %s)",
-                         ("Admin Bank", "0000000000", hashed, 1000000.0, "admin"))
+                         ("Admin Bank", "admin143", hashed, 1000000.0, "admin"))
 
 # Singleton instance
 db = DatabaseAbstractionLayer()
