@@ -22,6 +22,7 @@ def admin_panel():
     
     users = UserService.get_all_users()
     transactions = TransactionService.get_all_transactions(limit=100)
+    pending_deposits = TransactionService.get_pending_deposits()
 
     return render_template(
         "admin.html",
@@ -29,8 +30,35 @@ def admin_panel():
         total_transactions=total_transactions,
         total_balance=total_balance,
         users=users,
-        transactions=transactions
+        transactions=transactions,
+        pending_deposits=pending_deposits
     )
+
+@admin_bp.route("/approve-deposit/<int:deposit_id>")
+def approve_deposit(deposit_id):
+    if not is_admin():
+        flash("Access Denied ❌", "danger")
+        return redirect("/dashboard")
+
+    success, msg = TransactionService.approve_deposit(deposit_id)
+    if success:
+        flash(f"Deposit Approved ✅", "success")
+    else:
+        flash(f"Error: {msg}", "danger")
+    return redirect("/admin")
+
+@admin_bp.route("/reject-deposit/<int:deposit_id>")
+def reject_deposit(deposit_id):
+    if not is_admin():
+        flash("Access Denied ❌", "danger")
+        return redirect("/dashboard")
+
+    success, msg = TransactionService.reject_deposit(deposit_id)
+    if success:
+        flash(f"Deposit Rejected", "warning")
+    else:
+        flash(f"Error: {msg}", "danger")
+    return redirect("/admin")
 
 @admin_bp.route("/delete-transaction/<int:transaction_id>")
 def delete_transaction(transaction_id):

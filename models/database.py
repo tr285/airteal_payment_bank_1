@@ -165,6 +165,41 @@ class DatabaseAbstractionLayer:
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
             )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS deposits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                utr VARCHAR(20) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS external_transfers (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                bank_name VARCHAR(100) NOT NULL,
+                account_no VARCHAR(50) NOT NULL,
+                ifsc VARCHAR(20) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'completed',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS loans (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                amount_granted DECIMAL(15, 2) NOT NULL,
+                amount_due DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'active',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
             """
         ]
 
@@ -185,6 +220,38 @@ class DatabaseAbstractionLayer:
                 sender_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 receiver_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 amount DECIMAL(15, 2) NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS deposits (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                amount DECIMAL(15, 2) NOT NULL,
+                utr VARCHAR(20) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS external_transfers (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                bank_name VARCHAR(100) NOT NULL,
+                account_no VARCHAR(50) NOT NULL,
+                ifsc VARCHAR(20) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'completed',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS loans (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                amount_granted DECIMAL(15, 2) NOT NULL,
+                amount_due DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'active',
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
@@ -210,6 +277,41 @@ class DatabaseAbstractionLayer:
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS deposits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INT NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                utr VARCHAR(20) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS external_transfers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INT NOT NULL,
+                bank_name VARCHAR(100) NOT NULL,
+                account_no VARCHAR(50) NOT NULL,
+                ifsc VARCHAR(20) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'completed',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS loans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INT NOT NULL,
+                amount_granted DECIMAL(15, 2) NOT NULL,
+                amount_due DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'active',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """
         ]

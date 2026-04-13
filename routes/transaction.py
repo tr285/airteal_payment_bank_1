@@ -42,13 +42,13 @@ def deposit():
     if request.method == "POST":
         user_id = session["user_id"]
         amount = float(request.form.get("amount", 0))
+        utr = request.form.get("utr", "")
 
-        success, msg = TransactionService.deposit_money(user_id, amount)
+        success, msg = TransactionService.create_deposit_request(user_id, amount, utr)
         
         if success:
-            transaction_id = str(uuid.uuid4())[:8].upper()
-            payment_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
-            return render_template("receipt.html", transaction_id=transaction_id, amount=amount, payment_time=payment_time, upi_id="adminbank@upi")
+            flash(msg, "success")
+            return redirect("/dashboard")
         else:
             flash(f"Deposit Failed: {msg} ❌", "danger")
             return redirect("/deposit")
@@ -96,3 +96,56 @@ def download_statement():
     buffer.seek(0)
 
     return send_file(buffer, as_attachment=True, download_name="statement.pdf", mimetype="application/pdf")
+
+@transaction_bp.route("/bank-transfer", methods=["GET", "POST"])
+def bank_transfer():
+    if "user_id" not in session:
+        return redirect("/login")
+        
+    if request.method == "POST":
+        user_id = session["user_id"]
+        bank_name = request.form.get("bank_name", "")
+        account_no = request.form.get("account_no", "")
+        ifsc = request.form.get("ifsc", "")
+        amount = float(request.form.get("amount", 0))
+
+        success, msg = TransactionService.external_bank_transfer(user_id, bank_name, account_no, ifsc, amount)
+        if success:
+            flash("Bank transfer initiated successfully!", "success")
+            return redirect("/dashboard")
+        else:
+            flash(f"Transfer Failed: {msg} ❌", "danger")
+            return redirect("/bank-transfer")
+            
+    balance = UserService.get_user_by_id(session["user_id"])["balance"]
+    return render_template("bank_transfer.html", balance=balance)
+
+@transaction_bp.route("/loan", methods=["GET", "POST"])
+def loan():
+    if "user_id" not in session:
+        return redirect("/login")
+        
+    user_id = session["user_id"]
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "apply":
+            amount = float(request.form.get("amount", 0))
+            success, msg = TransactionService.apply_for_loan(user_id, amount)
+            if success:
+                flash("Loan approved and credited instantly! 🎉", "success")
+            else:
+                flash(f"Loan Application Failed: {msg} ❌", "danger")
+        elif action == "repay":
+            loan_id = request.form.get("loan_id")
+            success, msg = TransactionService.repay_loan(user_id, loan_id)
+            if success:
+                flash("Loan repaid successfully!", "success")
+            else:
+                flash(f"Repayment Failed: {msg} ❌", "danger")
+                
+        return redirect("/loan")
+        
+    balance = UserService.get_user_by_id(user_id)["balance"]
+    loans = TransactionService.get_user_loans(user_id)
+    return render_template("loan.html", balance=balance, loans=loans)

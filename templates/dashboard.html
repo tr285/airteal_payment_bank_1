@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .action-card { transition: all 0.2s ease; border: 1px solid transparent; }
+    .action-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: rgba(239, 68, 68, 0.3); }
+</style>
 <div class="row g-4 mt-2">
     <!-- Balance Card -->
     <div class="col-md-8">
@@ -42,6 +46,53 @@
                 <div class="bg-danger bg-opacity-10 p-3 rounded-circle text-danger">
                     <i class="fa-solid fa-arrow-turn-up"></i>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Grid -->
+    <div class="col-12 mt-4">
+        <h6 class="fw-bold text-muted mb-3">QUICK ACTIONS</h6>
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <a href="/transfer" class="text-decoration-none">
+                    <div class="glass-card p-4 text-center h-100 action-card">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3 text-primary">
+                            <i class="fa-solid fa-address-book fa-xl"></i>
+                        </div>
+                        <h6 class="fw-bold" style="color: var(--text-main);">To Contact</h6>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/bank-transfer" class="text-decoration-none">
+                    <div class="glass-card p-4 text-center h-100 action-card">
+                        <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3 text-info">
+                            <i class="fa-solid fa-building-columns fa-xl"></i>
+                        </div>
+                        <h6 class="fw-bold" style="color: var(--text-main);">To Bank</h6>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/loan" class="text-decoration-none">
+                    <div class="glass-card p-4 text-center h-100 action-card">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3 text-warning">
+                            <i class="fa-solid fa-hand-holding-dollar fa-xl"></i>
+                        </div>
+                        <h6 class="fw-bold" style="color: var(--text-main);">Get Loan</h6>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/profile" class="text-decoration-none">
+                    <div class="glass-card p-4 text-center h-100 action-card">
+                        <div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3 text-secondary">
+                            <i class="fa-solid fa-gear fa-xl"></i>
+                        </div>
+                        <h6 class="fw-bold" style="color: var(--text-main);">Settings</h6>
+                    </div>
+                </a>
             </div>
         </div>
     </div>

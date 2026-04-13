@@ -1,5 +1,8 @@
 from models.database import db
 from services.user_service import UserService
+from decimal import Decimal
+
+MAX_TRANSACTION_LIMIT = 1000000.0  # ₹10 Lakhs max per transaction limit for fraud detection
 
 class TransactionService:
     @staticmethod
@@ -34,34 +37,6 @@ class TransactionService:
         return db.fetchall(query, (limit,))
         
     @staticmethod
-    def add_money(user_id, amount, utr):
-        try:
-            amount = Decimal(str(amount))
-            if amount <= 0:
-                return False, "Deposit amount must be positive."
-        except:
-            return False, "Invalid amount format."
-
-        admin = db.fetchone("SELECT id FROM users WHERE role='admin' ORDER BY id ASC LIMIT 1")
-        if not admin:
-            return False, "System Error: Admin vault unreachable."
-
-        admin_id = admin['id']
-        try:
-            # We decrement Admin, increment User
-            db.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (amount, admin_id))
-            db.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (amount, user_id))
-            
-            # Record it (utr can be tracked later but completes MVP)
-            db.execute("INSERT INTO transactions (sender_id, receiver_id, amount) VALUES (%s, %s, %s)",
-                       (admin_id, user_id, amount))
-            db.commit()
-            return True, "Funds successfully added to your account!"
-        except Exception as e:
-            db.rollback()
-            return False, f"Transaction failed: {e}"
-
-    @staticmethod
     def get_total_transactions_count():
         query = "SELECT COUNT(*) AS total_transactions FROM transactions"
         res = db.fetchone(query)
@@ -71,6 +46,9 @@ class TransactionService:
     def transfer_money(sender_id, receiver_mobile, amount):
         if amount <= 0:
             return False, "Invalid amount"
+            
+        if amount > MAX_TRANSACTION_LIMIT:
+            return False, "Security Alert: Amount exceeds transaction limit of ₹10,00,000."
             
         # Get Sender
         sender = UserService.get_user_by_id(sender_id)
@@ -87,10 +65,6 @@ class TransactionService:
             return False, "Cannot send money to yourself"
 
         try:
-            # We must use a transaction. The exact syntax for psycopg2 vs mysql can differ, but our execute method commits manually per statement.
-            # To perform a true atomic operation, we could expand our DAL to support transactions properly.
-            # For this simple DAL setup, we disable autocommit and do it.
-            
             cursor = db._get_cursor()
             
             # Deduct from sender
@@ -111,9 +85,12 @@ class TransactionService:
             return False, str(e)
             
     @staticmethod
-    def deposit_money(user_id, amount):
+    def create_deposit_request(user_id, amount, utr):
         if amount <= 0:
             return False, "Invalid Amount"
+            
+        if amount > MAX_TRANSACTION_LIMIT:
+            return False, "Security Alert: Deposit amount exceeds limit of ₹10,00,000. Please contact your branch."
             
         admin = UserService.get_admin_user()
         if not admin:
@@ -125,9 +102,41 @@ class TransactionService:
             return False, "Admin cannot deposit using this method"
 
         try:
+            existing = db.fetchone("SELECT id FROM deposits WHERE utr=%s", (utr,))
+            if existing:
+                return False, "UTR has already been submitted for a deposit. Please wait for verification."
+
+            cursor = db._get_cursor()
+            cursor.execute("""
+                INSERT INTO deposits (user_id, amount, utr, status)
+                VALUES (%s, %s, %s, 'pending')
+            """, (user_id, amount, utr))
+            
+            db.commit()
+            return True, "Deposit request submitted successfully. Pending Admin verification."
+            
+        except Exception as e:
+            db.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def approve_deposit(deposit_id):
+        deposit = db.fetchone("SELECT * FROM deposits WHERE id=%s AND status='pending'", (deposit_id,))
+        if not deposit:
+            return False, "Deposit not found or already processed"
+            
+        amount = deposit['amount']
+        user_id = deposit['user_id']
+        
+        admin = UserService.get_admin_user()
+        if not admin:
+             return False, "Admin account not found"
+        admin_id = admin['id']
+        
+        try:
             cursor = db._get_cursor()
             
-            # Simulate real world: Add to admin pool (system pool)
+            # Add to admin pool
             cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount, admin_id))
             # Add to user
             cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount, user_id))
@@ -136,15 +145,146 @@ class TransactionService:
                 INSERT INTO transactions (sender_id, receiver_id, amount)
                 VALUES (%s, %s, %s)
             """, (admin_id, user_id, amount))
+            # Update deposit status
+            cursor.execute("UPDATE deposits SET status='approved' WHERE id=%s", (deposit_id,))
             
             db.commit()
-            return True, "Deposit successful"
-            
+            return True, "Deposit Approved"
         except Exception as e:
             db.rollback()
             return False, str(e)
 
     @staticmethod
+    def reject_deposit(deposit_id):
+        try:
+            db.execute("UPDATE deposits SET status='rejected' WHERE id=%s", (deposit_id,))
+            return True, "Deposit rejected"
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def get_pending_deposits():
+        query = """
+            SELECT d.id, d.amount, d.utr, d.timestamp, u.full_name, u.mobile 
+            FROM deposits d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.status='pending'
+            ORDER BY d.timestamp ASC
+        """
+        return db.fetchall(query)
+
+    @staticmethod
     def delete_transaction(transaction_id):
         query = "DELETE FROM transactions WHERE id=%s"
         db.execute(query, (transaction_id,))
+
+    @staticmethod
+    def external_bank_transfer(user_id, bank_name, account_no, ifsc, amount):
+        if amount <= 0:
+            return False, "Invalid Amount"
+        if amount > MAX_TRANSACTION_LIMIT:
+            return False, "Amount exceeds transfer limit."
+            
+        user = UserService.get_user_by_id(user_id)
+        if not user or float(user['balance']) < amount:
+            return False, "Insufficient balance"
+            
+        admin = UserService.get_admin_user()
+        if not admin:
+            return False, "System bank not available"
+            
+        try:
+            cursor = db._get_cursor()
+            # Deduct from user
+            cursor.execute("UPDATE users SET balance = balance - %s WHERE id=%s", (amount, user_id))
+            # Deduct from admin (bank reserves leaving system)
+            cursor.execute("UPDATE users SET balance = balance - %s WHERE id=%s", (amount, admin['id']))
+            # Insert into external_transfers
+            cursor.execute("""
+                INSERT INTO external_transfers (user_id, bank_name, account_no, ifsc, amount) 
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_id, bank_name, account_no, ifsc, amount))
+            
+            db.commit()
+            return True, "Bank Transfer Initiated Successfully"
+        except Exception as e:
+            db.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def apply_for_loan(user_id, amount):
+        if amount <= 0:
+            return False, "Invalid loan amount"
+        if amount > 50000:
+            return False, "Maximum instant loan allowed is ₹50,000"
+            
+        admin = UserService.get_admin_user()
+        if not admin or float(admin['balance']) < amount:
+            return False, "System resources temporarily unavailable for loans"
+            
+        amount_due = float(amount) * 1.05  # 5% flat interest
+        
+        try:
+            cursor = db._get_cursor()
+            # Deduct from admin
+            cursor.execute("UPDATE users SET balance = balance - %s WHERE id=%s", (amount, admin['id']))
+            # Credit user
+            cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount, user_id))
+            
+            # Log as standard transaction from admin to user
+            cursor.execute("""
+                INSERT INTO transactions (sender_id, receiver_id, amount)
+                VALUES (%s, %s, %s)
+            """, (admin['id'], user_id, amount))
+            
+            # Create Loan record
+            cursor.execute("""
+                INSERT INTO loans (user_id, amount_granted, amount_due, status)
+                VALUES (%s, %s, %s, 'active')
+            """, (user_id, amount, amount_due))
+            
+            db.commit()
+            return True, "Loan granted successfully"
+        except Exception as e:
+            db.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def repay_loan(user_id, loan_id):
+        # We enforce full repayment
+        loan = db.fetchone("SELECT * FROM loans WHERE id=%s AND user_id=%s AND status='active'", (loan_id, user_id))
+        if not loan:
+            return False, "Loan not found or already repaid"
+            
+        amount_due = float(loan['amount_due'])
+        user = UserService.get_user_by_id(user_id)
+        if not user or float(user['balance']) < amount_due:
+            return False, "Insufficient balance to repay loan"
+            
+        admin = UserService.get_admin_user()
+        try:
+            cursor = db._get_cursor()
+            # Deduct from user
+            cursor.execute("UPDATE users SET balance = balance - %s WHERE id=%s", (amount_due, user_id))
+            # Send back to admin
+            cursor.execute("UPDATE users SET balance = balance + %s WHERE id=%s", (amount_due, admin['id']))
+            
+            # Log repayment transaction
+            cursor.execute("""
+                INSERT INTO transactions (sender_id, receiver_id, amount)
+                VALUES (%s, %s, %s)
+            """, (user_id, admin['id'], amount_due))
+            
+            # Update loan status
+            cursor.execute("UPDATE loans SET status='repaid' WHERE id=%s", (loan_id,))
+            
+            db.commit()
+            return True, "Loan repaid successfully"
+        except Exception as e:
+            db.rollback()
+            return False, str(e)
+            
+    @staticmethod
+    def get_user_loans(user_id):
+        query = "SELECT * FROM loans WHERE user_id=%s ORDER BY timestamp DESC"
+        return db.fetchall(query, (user_id,))
