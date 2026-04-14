@@ -52,7 +52,7 @@ class TransactionService:
             
         # Get Sender
         sender = UserService.get_user_by_id(sender_id)
-        if not sender or sender['balance'] < amount:
+        if not sender or float(sender['balance']) < amount:
             return False, "Insufficient balance"
             
         # Get Receiver

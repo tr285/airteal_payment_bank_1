@@ -69,7 +69,7 @@ def download_statement():
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("<b>Airtel Payments Bank - Statement</b>", styles["Title"]))
+    elements.append(Paragraph("<b>TR Payments Bank - Statement</b>", styles["Title"]))
     elements.append(Spacer(1, 12))
     elements.append(Paragraph(f"Account Holder: {user['full_name']}", styles["Normal"]))
     elements.append(Paragraph(f"Generated On: {datetime.now().strftime('%d %b %Y %I:%M %p')}", styles["Normal"]))

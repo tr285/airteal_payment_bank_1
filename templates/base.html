@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airtel Payment Bank</title>
+    <title>TR Payment Bank</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
@@ -23,8 +23,8 @@
     {% if session.get('user_id') %}
     <!-- Sidebar -->
     <div class="sidebar glass-card border-0 rounded-0">
-        <div class="brand-logo">
-            <i class="fa-solid fa-building-columns"></i> Airtel Bank
+        <div class="brand-logo d-flex align-items-center justify-content-center gap-2">
+            <img src="{{ url_for('static', filename='images/tr_logo.png') }}" alt="TR Logo" style="height: 40px; border-radius: 8px;"> TR Bank
         </div>
         <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">
             <i class="fa-solid fa-house mb-1"></i> Dashboard
